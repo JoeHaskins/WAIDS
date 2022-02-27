@@ -1,4 +1,5 @@
 import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
 /**
  * waids
  * Test URLs:
@@ -8,10 +9,15 @@ import javax.swing.JFrame;
 
 public class Main {
 
+	static Frame ui;
 	public static void main(String[] args) {
 		//Create User Interface
-		Frame frame = new Frame();
-		
+		ui = new Frame();
+	}
+
+	//Refresh Jframe to load new components
+	public static void refresh() {
+		SwingUtilities.updateComponentTreeUI(ui);
 	}
 
 }

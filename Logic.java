@@ -3,6 +3,9 @@ import java.net.URLConnection;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+
 public class Logic {
 
 	public static void Start(String host, String port) {
@@ -11,7 +14,7 @@ public class Logic {
 
 			try {
 				String u;
-				if (Integer.parseInt(port) == 80) {
+				if (port.length()!=0 && Integer.parseInt(port) == 80) {
 					u = "http://";
 				} else {
 					u = "https://";
@@ -28,29 +31,31 @@ public class Logic {
 
 				//Get Server Header
 				List<String> server = map.get("Server");
-				if (server == null) {
-					System.out.println("'Server' isn't in response headers!");
-				} else {
+				if (server != null) {
 					for (String header : server) {
-						System.out.println("\nServer: " + header);
+						VulnData vuln = new VulnData("Server: "+header, "Detected from \"Server\" header!");
+						Frame.addVuln(vuln);
+						Main.refresh();
 					}
 				}
 
 				//Get X-Powered-By Header
 				List<String> powered = map.get("X-Powered-By");
-				if (powered == null) {
-				} else {
+				if (powered != null) {
 					for (String header : powered) {
-						System.out.println("Powered By: " + header);
+						VulnData vuln = new VulnData("Using: "+header, "Detected from \"X-Powered-By\" header!");
+						Frame.addVuln(vuln);
+						Main.refresh();
 					}
 				}
 
 				//Get AspNet Version Header
 				List<String> Aspnet = map.get("X-AspNet-Version");
-				if (Aspnet == null) {
-				} else {
+				if (Aspnet != null) {
 					for (String header : Aspnet) {
-						System.out.println("AspNet Version: " + header);
+						VulnData vuln = new VulnData("AspNet: "+header, "Detected from \"X-AspNet-Version\" header!");
+						Frame.addVuln(vuln);
+						Main.refresh();
 					}
 				}
 	
@@ -61,7 +66,8 @@ public class Logic {
 			}
 
 		} else {
-			System.out.println("Empty");
+			//Provide Error message stating url/host field is empty
+			JOptionPane.showMessageDialog(null, "Please Enter a URL or Host!", "Error - NO HOST",JOptionPane.WARNING_MESSAGE);
 		}
 		
 	}
