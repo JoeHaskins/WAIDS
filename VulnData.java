@@ -1,5 +1,3 @@
-import java.lang.reflect.Constructor;
-
 public class VulnData {
 	String name;
 	String details;

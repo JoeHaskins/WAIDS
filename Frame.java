@@ -3,17 +3,15 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
-
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Insets;
 import java.awt.BorderLayout;
-import java.awt.FlowLayout;
 
 public class Frame extends JFrame{
 	
@@ -26,8 +24,10 @@ public class Frame extends JFrame{
 	
 	//Create control panel
 	JPanel cntrlpanel = new JPanel();
-	//Create detail panel
+	//Create detail panel and its title
 	JPanel detailpanel = new JPanel();
+	static JLabel title = new JLabel();
+	static JTextArea desc = new JTextArea();
 	//Create list panel
 	static JPanel listpanel = new JPanel();
 
@@ -68,7 +68,7 @@ public class Frame extends JFrame{
 		stopbtn.addActionListener(e -> Logic.Stop());
 
 		//Add Reset Button
-		JButton resetbtn = new JButton("Rest");
+		JButton resetbtn = new JButton("Reset");
 		resetbtn.setFocusable(false);
 		resetbtn.setBackground(Color.orange);
 		resetbtn.addActionListener(e -> reset());
@@ -85,6 +85,20 @@ public class Frame extends JFrame{
 		//detailpanel.setBackground(Color.green);
 		detailpanel.setPreferredSize(new Dimension((jfwidth/4)*2, jfheight));
 		detailpanel.setBorder(blackborder);
+		detailpanel.setLayout(new BorderLayout());
+		title.setText("Enter a URL or Hostname to begin.");
+		title.setFont(new Font("Courier",Font.BOLD,24));
+		title.setBorder(BorderFactory.createEmptyBorder(10, 10, 20, 10));
+		desc.setLineWrap(true);
+		desc.setWrapStyleWord(true);
+		desc.setMargin(new Insets(10,10,10,10));
+		desc.setText("If the port field is left empty it will default to 443.");
+		desc.setFont(new Font("Courier",Font.PLAIN,20));
+		desc.setBorder(blackborder);
+		desc.setEditable(false);
+		//desc.setOpaque(true);
+		detailpanel.add(title, BorderLayout.NORTH);
+		detailpanel.add(desc,BorderLayout.CENTER);
 
 		//listpanel.setBackground(Color.blue);
 		listpanel.setPreferredSize(new Dimension((jfwidth/4)*1, jfheight));
@@ -105,20 +119,44 @@ public class Frame extends JFrame{
 		this.setVisible(true);
 	}
 
+	//Reset JFrame to default
 	public static void reset() {
 		listpanel.removeAll();
+		updateTitle("Enter a URL or Hostname to begin.");
+		updateDesc("If the port field is left empty it will default to 443.");
 		y=0;
 		Main.refresh();
 	}
 
+	//Add a detection to list and detail panel
 	public static void addVuln(VulnData data) {
+		//Add detection to list as button
 		JButton vuln = new JButton();
 		vuln.setBounds(0,y,(jfwidth/4)*1,jfheight/15);
 		vuln.setText(data.name);
 		vuln.setBorder(BorderFactory.createLineBorder(Color.black));
 		vuln.setBackground(Color.white);
 		vuln.setFocusable(false);
+		vuln.addActionListener(e -> view(data));
 		listpanel.add(vuln);
 		y +=jfheight/15;
+	
+	}
+
+	//update detail panel on list button click
+	public static void view(VulnData data) {
+		updateTitle(data.name);
+		updateDesc(data.details);
+		Main.refresh();
+	}
+
+	//Update detail panel title
+	public static void updateTitle(String newTitle) {
+		title.setText(newTitle);
+	}
+
+	//Update desc of detail panel
+	public static void updateDesc(String newDetail) {
+		desc.setText(newDetail);
 	}
 }
