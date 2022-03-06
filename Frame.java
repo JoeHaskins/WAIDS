@@ -3,15 +3,23 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.UIManager;
 import javax.swing.border.Border;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Insets;
+import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.awt.BorderLayout;
+import java.awt.Desktop;
+import javax.swing.AbstractButton;
 
 public class Frame extends JFrame{
 	
@@ -27,15 +35,27 @@ public class Frame extends JFrame{
 	//Create detail panel and its title
 	JPanel detailpanel = new JPanel();
 	static JLabel title = new JLabel();
+	static JButton link = new JButton();
 	static JTextArea desc = new JTextArea();
 	//Create list panel
 	static JPanel listpanel = new JPanel();
+	//Create Progress Bar
+	static JProgressBar progress = new JProgressBar();
 
 	Frame(){
 		//cntrlpanel.setBackground(Color.red);
 		cntrlpanel.setPreferredSize(new Dimension((jfwidth/4)*1, jfheight));
 		Border blackborder = BorderFactory.createLineBorder(Color.black);
 		cntrlpanel.setBorder(blackborder);
+
+		//Setup Progress bar
+		UIManager.put("ProgressBar.selectionBackground", Color.black);
+		UIManager.put("ProgressBar.selectionForeground", Color.black);
+		progress.setStringPainted(true);
+		progress.setBorder(blackborder);
+		progress.setBackground(Color.white);
+		progress.setFont(new Font("Courier",Font.PLAIN,20));
+		updateProg(100);
 
 		//Setup IP/HOST textboxs
 		JLabel hostlabel = new JLabel();
@@ -81,6 +101,7 @@ public class Frame extends JFrame{
 		cntrlpanel.add(startbtn);
 		cntrlpanel.add(stopbtn);
 		cntrlpanel.add(resetbtn);
+		cntrlpanel.add(progress);
 
 		//detailpanel.setBackground(Color.green);
 		detailpanel.setPreferredSize(new Dimension((jfwidth/4)*2, jfheight));
@@ -92,13 +113,17 @@ public class Frame extends JFrame{
 		desc.setLineWrap(true);
 		desc.setWrapStyleWord(true);
 		desc.setMargin(new Insets(10,10,10,10));
-		desc.setText("If the port field is left empty it will default to 443.");
+		desc.setText("If the port field is left empty it will default to 443(Https).");
 		desc.setFont(new Font("Courier",Font.PLAIN,20));
 		desc.setBorder(blackborder);
 		desc.setEditable(false);
+		link.setText("Link:");
+		link.setEnabled(false);
+		link.setFocusable(false);
 		//desc.setOpaque(true);
 		detailpanel.add(title, BorderLayout.NORTH);
 		detailpanel.add(desc,BorderLayout.CENTER);
+		detailpanel.add(link,BorderLayout.SOUTH);
 
 		//listpanel.setBackground(Color.blue);
 		listpanel.setPreferredSize(new Dimension((jfwidth/4)*1, jfheight));
@@ -106,7 +131,7 @@ public class Frame extends JFrame{
 		listpanel.setLayout(null);
 
 		//Create Main Frame
-		this.setTitle("WAIDS - Web App Scanner");
+		this.setTitle("WAIDS - Web App Information Disclosure Scanner");
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setLayout(new BorderLayout());
 		this.setResizable(false);
@@ -124,6 +149,9 @@ public class Frame extends JFrame{
 		listpanel.removeAll();
 		updateTitle("Enter a URL or Hostname to begin.");
 		updateDesc("If the port field is left empty it will default to 443.");
+		link.setText("Path:");
+		link.setEnabled(false);
+		updateProg(0);
 		y=0;
 		Main.refresh();
 	}
@@ -143,11 +171,34 @@ public class Frame extends JFrame{
 	
 	}
 
+	//Open link with default browser
+	public static void openLink(String url) {
+		try {
+			Desktop.getDesktop().browse(new URI(url));
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+		}
+	}
+
 	//update detail panel on list button click
 	public static void view(VulnData data) {
 		updateTitle(data.name);
 		updateDesc(data.details);
+		updateLink(data.url);
 		Main.refresh();
+	}
+
+	//Update Link button removing any existing action listeners
+	public  static void updateLink(String url){
+		ActionListener[] listeners = link.getActionListeners();
+		for (ActionListener listener : listeners) {
+			link.removeActionListener(listener);
+		}
+		link.setText("Path: "+url);
+		link.addActionListener(e -> openLink(url));
+		link.setEnabled(true);
 	}
 
 	//Update detail panel title
@@ -158,5 +209,15 @@ public class Frame extends JFrame{
 	//Update desc of detail panel
 	public static void updateDesc(String newDetail) {
 		desc.setText(newDetail);
+	}
+
+	//Update Progress Bar
+	public static void updateProg(int value) {
+		if (value == 100) {
+			progress.setString("Done!");
+			progress.setBackground(Color.green);
+		} else {
+			progress.setValue(value);
+		}
 	}
 }
