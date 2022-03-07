@@ -63,6 +63,38 @@ public class Logic {
 					Main.refresh();
 				}
 
+				//Check if robots.txt exists
+				connection = requestHandler(u+"/robots.txt");
+				if (connection.getResponseCode()==200) {
+					VulnData vuln = new VulnData("Robots File Detected", "The path /robots.txt exists possibly providing potential attackers with urls to hidden/sensitive directorys!",u+"/robots.txt");
+					Frame.addVuln(vuln);
+					Main.refresh();
+				}
+
+				//Check if phpinfo.php exists
+				connection = requestHandler(u+"/phpinfo.php");
+				if (connection.getResponseCode()==200) {
+					VulnData vuln = new VulnData("PhpInfo File Detected", "The path /phpinfo.php exists possibly providing potential attackers with detailed/sensitive information about the machine and its software!",u+"/phpinfo.php");
+					Frame.addVuln(vuln);
+					Main.refresh();
+				}
+
+				//Check if wp-json exists
+				connection = requestHandler(u+"/wp-json/");
+				if (connection.getResponseCode()==200) {
+					VulnData vuln = new VulnData("Wordpress Json", "The path /wp-json/ exists possibly providing potential attackers with detailed/sensitive information about the software and it's structure and users!",u+"/wp-json/");
+					Frame.addVuln(vuln);
+					Main.refresh();
+				}
+
+				//Check if wp-json/users exists
+				connection = requestHandler(u+"/wp-json/wp/v2/users");
+				if (connection.getResponseCode()==200) {
+					VulnData vuln = new VulnData("Wordpress User Json", "The path /wp-json/wp/v2/users exists possibly providing potential attackers with sensitive information about user accounts and help identify potential admin accounts!",u+"/wp-json/wp/v2/users/");
+					Frame.addVuln(vuln);
+					Main.refresh();
+				}
+
 				//Update Progress bar to show completion
 				Frame.updateProg(100);
 			} catch (Exception e) {
