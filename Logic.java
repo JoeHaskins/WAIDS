@@ -1,11 +1,16 @@
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
-import java.net.http.HttpClient;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.swing.JOptionPane;
+
+import netscape.javascript.JSObject;
 
 public class Logic {
 
@@ -74,25 +79,53 @@ public class Logic {
 				//Check if phpinfo.php exists
 				connection = requestHandler(u+"/phpinfo.php");
 				if (connection.getResponseCode()==200) {
-					VulnData vuln = new VulnData("PhpInfo File Detected", "The path /phpinfo.php exists possibly providing potential attackers with detailed/sensitive information about the machine and its software!",u+"/phpinfo.php");
-					Frame.addVuln(vuln);
+					String regex = "PHP Version\\s\\d+.\\d+.\\d+";
+					Pattern r = Pattern.compile(regex);
+					Matcher m = r.matcher(connectionToString(connection));
+					if (m.find()) {
+						VulnData vuln = new VulnData(m.group(0), "The path /phpinfo.php exists possibly providing potential attackers with detailed/sensitive information about the machine and its software!",u+"/phpinfo.php");
+						Frame.addVuln(vuln);
+					} else {
+						VulnData vuln = new VulnData("PhpInfo File Detected", "The path /phpinfo.php exists possibly providing potential attackers with detailed/sensitive information about the machine and its software!",u+"/phpinfo.php");
+						Frame.addVuln(vuln);
+					}
+					Main.refresh();
+				}
+
+				//Check if default 404 error page exists and if so extract version info
+				connection = requestHandler(u+"/123456abcdef");
+				if (connection.getResponseCode()==404) {
+					String regex = "(?<=Version\\sInformation:</b>&nbsp;).*";
+					Pattern r = Pattern.compile(regex);
+					Matcher m = r.matcher(connectionToString(connection));
+					System.out.println(connectionToString(connection));
+					if (m.find()) {
+						VulnData vuln = new VulnData("Version Info in Response", "The following version information was found in response to a 404 Error: \n\n"+m.group(0),u+"/123456abcdef");
+						Frame.addVuln(vuln);
+					}
+					
 					Main.refresh();
 				}
 
 				//Check if wp-json exists
 				connection = requestHandler(u+"/wp-json/");
 				if (connection.getResponseCode()==200) {
-					VulnData vuln = new VulnData("Wordpress Json", "The path /wp-json/ exists possibly providing potential attackers with detailed/sensitive information about the software and it's structure and users!",u+"/wp-json/");
-					Frame.addVuln(vuln);
-					Main.refresh();
+					if (connection.getHeaderField("Content-Type").contains("application/json")) {	
+						VulnData vuln = new VulnData("Wordpress Json", "The path /wp-json/ exists possibly providing potential attackers with detailed/sensitive information about the software and it's structure and users!",u+"/wp-json/");
+						Frame.addVuln(vuln);
+						Main.refresh();
+					}
 				}
 
 				//Check if wp-json/users exists
 				connection = requestHandler(u+"/wp-json/wp/v2/users");
 				if (connection.getResponseCode()==200) {
-					VulnData vuln = new VulnData("Wordpress User Json", "The path /wp-json/wp/v2/users exists possibly providing potential attackers with sensitive information about user accounts and help identify potential admin accounts!",u+"/wp-json/wp/v2/users/");
-					Frame.addVuln(vuln);
-					Main.refresh();
+					if (connection.getHeaderField("Content-Type").contains("application/json")) {
+						VulnData vuln = new VulnData("Wordpress User Json", "The path /wp-json/wp/v2/users exists possibly providing potential attackers with sensitive information about user accounts and help identify potential admin accounts!",u+"/wp-json/wp/v2/users/");
+						
+						Frame.addVuln(vuln);
+						Main.refresh();
+					}
 				}
 
 				//Update Progress bar to show completion
@@ -118,6 +151,24 @@ public class Logic {
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	public static String connectionToString(HttpURLConnection con) {
+		try {
+			InputStream body;
+			if (con.getResponseCode() < HttpURLConnection.HTTP_BAD_REQUEST) {
+				body = con.getInputStream();
+			} else {
+				 /* error from server */
+				body = con.getErrorStream();
+			}
+			String bodyString = new String(body.readAllBytes(), StandardCharsets.UTF_8);
+			return bodyString;
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(null, "Error Sending Request to Provided Host!", "Error reaching Host",JOptionPane.ERROR_MESSAGE);
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	public static void Stop() {

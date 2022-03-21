@@ -19,7 +19,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.awt.BorderLayout;
 import java.awt.Desktop;
-import javax.swing.AbstractButton;
 
 public class Frame extends JFrame{
 	
