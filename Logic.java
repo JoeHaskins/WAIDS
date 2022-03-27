@@ -2,11 +2,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.JOptionPane;
@@ -25,58 +22,40 @@ public class Logic {
 					u = "https://";
 				}
 				u = u+host;
-				URL url = new URL(u);
-				URLConnection con = url.openConnection();
-				Map<String, List<String>> map = con.getHeaderFields();
 				Frame.updateTitle("Scanning: "+host);
 
-				//Get Server Header
-				/*
-				List<String> server = map.get("Server");
-				if (server != null) {
-					for (String header : server) {
-						VulnData vuln = new VulnData("Server: "+header, "Detected from \"Server\" header in response!",u);
-						list.add(vuln);
-					}
-				}
-				*/
-				//Get X-Powered-By Header
-				List<String> powered = map.get("X-Powered-By");
-				if (powered != null) {
-					for (String header : powered) {
-						VulnData vuln = new VulnData("Using: "+header, "Detected from \"X-Powered-By\" header in response!",u);
-						list.add(vuln);
-					}
+				//Check root for headers
+				HttpURLConnection connection = requestHandler(u+"/");
+				if (connection.getResponseCode()==200) {
+					headercheck(connection, list,u+"/");
 				}
 
-				//Get AspNet Version Header
-				List<String> Aspnet = map.get("X-AspNet-Version");
-				if (Aspnet != null) {
-					for (String header : Aspnet) {
-						VulnData vuln = new VulnData("AspNet Version: "+header, "Detected from \"X-AspNet-Version\" header in response!",u);
-						list.add(vuln);
-					}
+				//Check malformed request for headers
+				connection = requestHandler(u+"/ Santa /");
+				if (connection.getResponseCode() >200) {
+					headercheck(connection, list,u+"/%20Santa%20/");
 				}
 
 				//Check if sitemap.xml exists
-				HttpURLConnection connection = requestHandler(u+"/sitemap.xml");
+				connection = requestHandler(u+"/sitemap.xml");
 				if (connection.getResponseCode()==200) {
+					headercheck(connection, list,u+"/sitemap.xml");
 					VulnData vuln = new VulnData("Sitemap Detected", "The path /sitemap.xml exists possibly providing potential attackers with urls to hidden/sensitive directorys!",u+"/sitemap.xml");
 					list.add(vuln);
-					headercheck(connection, list,u+"/sitemap.xml");
 				}
 
 				//Check if robots.txt exists
 				connection = requestHandler(u+"/robots.txt");
 				if (connection.getResponseCode()==200) {
+					headercheck(connection, list,u+"/robots.txt");
 					VulnData vuln = new VulnData("Robots File Detected", "The path /robots.txt exists possibly providing potential attackers with urls to hidden/sensitive directorys!",u+"/robots.txt");
 					list.add(vuln);
-					headercheck(connection, list,u+"/robots.txt");
 				}
 
 				//Check if phpinfo.php exists
 				connection = requestHandler(u+"/phpinfo.php");
 				if (connection.getResponseCode()==200) {
+					headercheck(connection, list,u+"/phpinfo.php");
 					String regex = "PHP Version\\s\\d+.\\d+.\\d+";
 					Pattern r = Pattern.compile(regex);
 					Matcher m = r.matcher(connectionToString(connection));
@@ -92,6 +71,7 @@ public class Logic {
 				//Check if default 404 error page exists and if so extract version info
 				connection = requestHandler(u+"/123456abcdef");
 				if (connection.getResponseCode()==404) {
+					headercheck(connection, list,u+"/123456abcdef");
 					String regex = "(?<=Version\\sInformation:</b>&nbsp;).*";
 					Pattern r = Pattern.compile(regex);
 					Matcher m = r.matcher(connectionToString(connection));
@@ -105,6 +85,7 @@ public class Logic {
 				//Check if wp-json exists
 				connection = requestHandler(u+"/wp-json/");
 				if (connection.getResponseCode()==200) {
+					headercheck(connection, list,u+"/wp-json/");
 					if (connection.getHeaderField("Content-Type").contains("application/json")) {	
 						VulnData vuln = new VulnData("Wordpress Json", "The path /wp-json/ exists possibly providing potential attackers with detailed/sensitive information about the software and it's structure and users!",u+"/wp-json/");
 						list.add(vuln);
@@ -114,20 +95,10 @@ public class Logic {
 				//Check if wp-json/users exists
 				connection = requestHandler(u+"/wp-json/wp/v2/users");
 				if (connection.getResponseCode()==200) {
+					headercheck(connection, list,u+"/wp-json/wp/v2/users");
 					if (connection.getHeaderField("Content-Type").contains("application/json")) {
 						VulnData vuln = new VulnData("Wordpress User Json", "The path /wp-json/wp/v2/users exists possibly providing potential attackers with sensitive information about user accounts and help identify potential admin accounts!",u+"/wp-json/wp/v2/users/");
 						list.add(vuln);
-					}
-				}
-
-				//Check if cors allows any domain
-				connection = requestHandler(u+"/");
-				if (connection.getResponseCode()==200) {
-					if (connection.getHeaderField("Access-Control-Allow-Origin") != null) {
-						if (connection.getHeaderField("Access-Control-Allow-Origin").contains("*")) {
-							VulnData vuln = new VulnData("CORS Misconfiguration", "The server allows cross origin requests from arbitary domains, this could pose a security risk!",u+"/");
-							list.add(vuln);
-						}
 					}
 				}
 
@@ -137,7 +108,7 @@ public class Logic {
 				Main.refresh();
 
 				//Update title to show completion
-				Frame.updateTitle("Completed Scanning: "+url);
+				Frame.updateTitle("Completed Scanning: "+host);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -164,10 +135,41 @@ public class Logic {
 
 	//Method to check for various headers on each request
 	public static void headercheck(HttpURLConnection connection, ArrayList<VulnData> list, String u) {
+		//Check for server header
 		if (connection.getHeaderField("Server") != null) {
 			VulnData vuln = new VulnData("Server: "+connection.getHeaderField("Server"), "Detected from \"Server\" header in response!",u);
 			if (checkList(list, vuln.name)) {
 				list.add(vuln);
+			}
+		}
+		//Check for X-Powered-by header
+		if (connection.getHeaderField("X-Powered-By") != null) {
+			VulnData vuln = new VulnData("X-Powered-By: "+connection.getHeaderField("X-Powered-By"), "Detected from \"X-Powered-By\" header in response!",u);
+			if (checkList(list, vuln.name)) {
+				list.add(vuln);
+			}
+		}
+		//Check for X-AspNet-Version header
+		if (connection.getHeaderField("X-AspNet-Version") != null) {
+			VulnData vuln = new VulnData("X-AspNet-Version: "+connection.getHeaderField("X-AspNet-Version"), "Detected from \"X-AspNet-Version\" header in response!",u);
+			if (checkList(list, vuln.name)) {
+				list.add(vuln);
+			}
+		}
+		//Check for X-AspNetMvc-Version header
+		if (connection.getHeaderField("X-AspNetMvc-Version") != null) {
+			VulnData vuln = new VulnData("X-AspNetMvc-Version: "+connection.getHeaderField("X-AspNetMvc-Version"), "Detected from \"X-AspNetMvc-Version\" header in response!",u);
+			if (checkList(list, vuln.name)) {
+				list.add(vuln);
+			}
+		}
+		//Check for cors header
+		if (connection.getHeaderField("Access-Control-Allow-Origin") != null) {
+			if (connection.getHeaderField("Access-Control-Allow-Origin").contains("*")) {
+				VulnData vuln = new VulnData("CORS Misconfiguration", "The server allows cross origin requests from arbitary domains, this could pose a security risk! Detected from the \"Access-Control-Allow-Origin\" header.",u+"/");
+				if (checkList(list, vuln.name)) {
+					list.add(vuln);
+				}
 			}
 		}
 	}
@@ -176,7 +178,6 @@ public class Logic {
 	public static boolean checkList(ArrayList<VulnData> list, String n) {
 		for (VulnData vuln : list) {
 			if (vuln.name.equals(n)) {
-				System.out.println("false");
 				return false;
 			} 
 		}
