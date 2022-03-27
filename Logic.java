@@ -31,6 +31,7 @@ public class Logic {
 				Frame.updateTitle("Scanning: "+host);
 
 				//Get Server Header
+				/*
 				List<String> server = map.get("Server");
 				if (server != null) {
 					for (String header : server) {
@@ -38,7 +39,7 @@ public class Logic {
 						list.add(vuln);
 					}
 				}
-
+				*/
 				//Get X-Powered-By Header
 				List<String> powered = map.get("X-Powered-By");
 				if (powered != null) {
@@ -62,6 +63,7 @@ public class Logic {
 				if (connection.getResponseCode()==200) {
 					VulnData vuln = new VulnData("Sitemap Detected", "The path /sitemap.xml exists possibly providing potential attackers with urls to hidden/sensitive directorys!",u+"/sitemap.xml");
 					list.add(vuln);
+					headercheck(connection, list,u+"/sitemap.xml");
 				}
 
 				//Check if robots.txt exists
@@ -69,6 +71,7 @@ public class Logic {
 				if (connection.getResponseCode()==200) {
 					VulnData vuln = new VulnData("Robots File Detected", "The path /robots.txt exists possibly providing potential attackers with urls to hidden/sensitive directorys!",u+"/robots.txt");
 					list.add(vuln);
+					headercheck(connection, list,u+"/robots.txt");
 				}
 
 				//Check if phpinfo.php exists
@@ -146,6 +149,7 @@ public class Logic {
 		
 	}
 
+	//Request Handler
 	public static HttpURLConnection requestHandler(String url) {
 		try {
 			URL Url = new URL(url);
@@ -158,10 +162,28 @@ public class Logic {
 		return null;
 	}
 
-	public static void headercheck(HttpURLConnection connection) {
-		
+	//Method to check for various headers on each request
+	public static void headercheck(HttpURLConnection connection, ArrayList<VulnData> list, String u) {
+		if (connection.getHeaderField("Server") != null) {
+			VulnData vuln = new VulnData("Server: "+connection.getHeaderField("Server"), "Detected from \"Server\" header in response!",u);
+			if (checkList(list, vuln.name)) {
+				list.add(vuln);
+			}
+		}
 	}
 
+	//Check vuln hasn't already been detected
+	public static boolean checkList(ArrayList<VulnData> list, String n) {
+		for (VulnData vuln : list) {
+			if (vuln.name.equals(n)) {
+				System.out.println("false");
+				return false;
+			} 
+		}
+		return true;
+	}
+
+	//Convert the input stream from a connection to a String
 	public static String connectionToString(HttpURLConnection con) {
 		try {
 			InputStream body;
@@ -180,6 +202,7 @@ public class Logic {
 		}
 	}
 
+	//Stop button
 	public static void Stop() {
 		System.out.println("Stop");
 	}
