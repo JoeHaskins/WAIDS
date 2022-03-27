@@ -4,19 +4,19 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.JOptionPane;
 
-import netscape.javascript.JSObject;
 
 public class Logic {
 
 	public static void Start(String host, String port) {
 		if (host.length()!=0) {
-			Frame.updateProg(0);
+			ArrayList<VulnData> list = new ArrayList<VulnData>();
 			try {
 				String u;
 				if (port.length()!=0 && Integer.parseInt(port) == 80) {
@@ -35,8 +35,7 @@ public class Logic {
 				if (server != null) {
 					for (String header : server) {
 						VulnData vuln = new VulnData("Server: "+header, "Detected from \"Server\" header in response!",u);
-						Frame.addVuln(vuln);
-						Main.refresh();
+						list.add(vuln);
 					}
 				}
 
@@ -45,8 +44,7 @@ public class Logic {
 				if (powered != null) {
 					for (String header : powered) {
 						VulnData vuln = new VulnData("Using: "+header, "Detected from \"X-Powered-By\" header in response!",u);
-						Frame.addVuln(vuln);
-						Main.refresh();
+						list.add(vuln);
 					}
 				}
 
@@ -55,8 +53,7 @@ public class Logic {
 				if (Aspnet != null) {
 					for (String header : Aspnet) {
 						VulnData vuln = new VulnData("AspNet Version: "+header, "Detected from \"X-AspNet-Version\" header in response!",u);
-						Frame.addVuln(vuln);
-						Main.refresh();
+						list.add(vuln);
 					}
 				}
 
@@ -64,16 +61,14 @@ public class Logic {
 				HttpURLConnection connection = requestHandler(u+"/sitemap.xml");
 				if (connection.getResponseCode()==200) {
 					VulnData vuln = new VulnData("Sitemap Detected", "The path /sitemap.xml exists possibly providing potential attackers with urls to hidden/sensitive directorys!",u+"/sitemap.xml");
-					Frame.addVuln(vuln);
-					Main.refresh();
+					list.add(vuln);
 				}
 
 				//Check if robots.txt exists
 				connection = requestHandler(u+"/robots.txt");
 				if (connection.getResponseCode()==200) {
 					VulnData vuln = new VulnData("Robots File Detected", "The path /robots.txt exists possibly providing potential attackers with urls to hidden/sensitive directorys!",u+"/robots.txt");
-					Frame.addVuln(vuln);
-					Main.refresh();
+					list.add(vuln);
 				}
 
 				//Check if phpinfo.php exists
@@ -84,12 +79,11 @@ public class Logic {
 					Matcher m = r.matcher(connectionToString(connection));
 					if (m.find()) {
 						VulnData vuln = new VulnData(m.group(0), "The path /phpinfo.php exists possibly providing potential attackers with detailed/sensitive information about the machine and its software!",u+"/phpinfo.php");
-						Frame.addVuln(vuln);
+						list.add(vuln);
 					} else {
 						VulnData vuln = new VulnData("PhpInfo File Detected", "The path /phpinfo.php exists possibly providing potential attackers with detailed/sensitive information about the machine and its software!",u+"/phpinfo.php");
-						Frame.addVuln(vuln);
+						list.add(vuln);
 					}
-					Main.refresh();
 				}
 
 				//Check if default 404 error page exists and if so extract version info
@@ -101,10 +95,8 @@ public class Logic {
 					System.out.println(connectionToString(connection));
 					if (m.find()) {
 						VulnData vuln = new VulnData("Version Info in Response", "The following version information was found in response to a 404 Error: \n\n"+m.group(0),u+"/123456abcdef");
-						Frame.addVuln(vuln);
+						list.add(vuln);
 					}
-					
-					Main.refresh();
 				}
 
 				//Check if wp-json exists
@@ -112,8 +104,7 @@ public class Logic {
 				if (connection.getResponseCode()==200) {
 					if (connection.getHeaderField("Content-Type").contains("application/json")) {	
 						VulnData vuln = new VulnData("Wordpress Json", "The path /wp-json/ exists possibly providing potential attackers with detailed/sensitive information about the software and it's structure and users!",u+"/wp-json/");
-						Frame.addVuln(vuln);
-						Main.refresh();
+						list.add(vuln);
 					}
 				}
 
@@ -122,14 +113,28 @@ public class Logic {
 				if (connection.getResponseCode()==200) {
 					if (connection.getHeaderField("Content-Type").contains("application/json")) {
 						VulnData vuln = new VulnData("Wordpress User Json", "The path /wp-json/wp/v2/users exists possibly providing potential attackers with sensitive information about user accounts and help identify potential admin accounts!",u+"/wp-json/wp/v2/users/");
-						
-						Frame.addVuln(vuln);
-						Main.refresh();
+						list.add(vuln);
 					}
 				}
 
-				//Update Progress bar to show completion
-				Frame.updateProg(100);
+				//Check if cors allows any domain
+				connection = requestHandler(u+"/");
+				if (connection.getResponseCode()==200) {
+					if (connection.getHeaderField("Access-Control-Allow-Origin") != null) {
+						if (connection.getHeaderField("Access-Control-Allow-Origin").contains("*")) {
+							VulnData vuln = new VulnData("CORS Misconfiguration", "The server allows cross origin requests from arbitary domains, this could pose a security risk!",u+"/");
+							list.add(vuln);
+						}
+					}
+				}
+
+				for (VulnData vuln : list) {
+					Frame.addVuln(vuln);
+				}
+				Main.refresh();
+
+				//Update title to show completion
+				Frame.updateTitle("Completed Scanning: "+url);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -151,6 +156,10 @@ public class Logic {
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	public static void headercheck(HttpURLConnection connection) {
+		
 	}
 
 	public static String connectionToString(HttpURLConnection con) {
