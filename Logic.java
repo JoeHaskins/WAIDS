@@ -7,10 +7,15 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.JOptionPane;
-
+import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileSystemView;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class Logic {
 
+	static ArrayList<VulnData> savelist = new ArrayList<VulnData>();
 	public static void Start(String host, String port) {
 		if (host.length()!=0) {
 			ArrayList<VulnData> list = new ArrayList<VulnData>();
@@ -23,6 +28,7 @@ public class Logic {
 				}
 				u = u+host;
 				Frame.updateTitle("Scanning: "+host);
+				Main.refresh();
 
 				//Check root for headers
 				HttpURLConnection connection = requestHandler(u+"/");
@@ -75,7 +81,6 @@ public class Logic {
 					String regex = "(?<=Version\\sInformation:</b>&nbsp;).*";
 					Pattern r = Pattern.compile(regex);
 					Matcher m = r.matcher(connectionToString(connection));
-					System.out.println(connectionToString(connection));
 					if (m.find()) {
 						VulnData vuln = new VulnData("Version Info in Response", "The following version information was found in response to a 404 Error: \n\n"+m.group(0),u+"/123456abcdef");
 						list.add(vuln);
@@ -109,6 +114,7 @@ public class Logic {
 
 				//Update title to show completion
 				Frame.updateTitle("Completed Scanning: "+host);
+				savelist=list;
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -203,8 +209,31 @@ public class Logic {
 		}
 	}
 
+	//reset array
+	public static void reset() {
+		savelist.clear();
+	}
+
 	//Stop button
-	public static void Stop() {
-		System.out.println("Stop");
+	public static void Save() {
+		try {
+			JFileChooser jfc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
+			jfc.setDialogTitle("Save your file");
+			jfc.setAcceptAllFileFilterUsed(false);
+			FileNameExtensionFilter filter = new FileNameExtensionFilter("txt",  "txt");
+			jfc.addChoosableFileFilter(filter);
+
+			int returnValue = jfc.showOpenDialog(null);
+			if (returnValue == JFileChooser.APPROVE_OPTION) {
+				String path = jfc.getSelectedFile().getPath()+".txt";
+				String text = "Detections\n\n";
+				for (VulnData vuln : savelist) {
+					text += "Name: "+vuln.name+"\nDetails: "+vuln.details+"\nURL: "+vuln.url+"\n\n";
+				}
+				Files.writeString(Paths.get(path), text);
+			}
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(null, "Error Selecting Folder Please Try Again!", "Error Selecting File",JOptionPane.ERROR_MESSAGE);
+		}
 	}
 }

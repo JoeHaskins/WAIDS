@@ -25,21 +25,23 @@ public class Frame extends JFrame{
 	//Height and width of application
 	static int jfwidth = 1200;
 	static int jfheight = 600;
-	static int y = 0;
+	static int vulny = 0;
 
 	Logic logic = new Logic();
 	
-	//Create control panel
-	JPanel cntrlpanel = new JPanel();
-	//Create detail panel and its title
-	JPanel detailpanel = new JPanel();
 	static JLabel title = new JLabel();
 	static JButton link = new JButton();
 	static JTextArea desc = new JTextArea();
+
 	//Create list panel
 	static JPanel listpanel = new JPanel();
+	//Create detail panel and its title
+	static JPanel detailpanel = new JPanel();
+	//Create control panel
+	static JPanel cntrlpanel = new JPanel();
+	
 	//Create Progress Bar
-	static JProgressBar progress = new JProgressBar();
+	//static JProgressBar progress = new JProgressBar();
 
 	Frame(){
 		//cntrlpanel.setBackground(Color.red);
@@ -48,19 +50,20 @@ public class Frame extends JFrame{
 		cntrlpanel.setBorder(blackborder);
 
 		//Setup Progress bar
-		UIManager.put("ProgressBar.selectionBackground", Color.black);
-		UIManager.put("ProgressBar.selectionForeground", Color.black);
-		progress.setStringPainted(true);
-		progress.setBorder(blackborder);
-		progress.setBackground(Color.white);
-		progress.setFont(new Font("Courier",Font.PLAIN,20));
-		updateProg(100);
+		//UIManager.put("ProgressBar.selectionBackground", Color.black);
+		//UIManager.put("ProgressBar.selectionForeground", Color.black);
+		//progress.setStringPainted(true);
+		//progress.setBorder(blackborder);
+		//progress.setBackground(Color.white);
+		//progress.setFont(new Font("Courier",Font.PLAIN,20));
+		//updateProg(100);
 
-		//Setup IP/HOST textboxs
+		//Setup IP/HOST, port labels
 		JLabel hostlabel = new JLabel();
 		hostlabel.setText("IP/HOST:          Port:");
 		hostlabel.setFont(new Font("Helvetica Bold",Font.PLAIN,24));
 		hostlabel.setVerticalAlignment(JLabel.TOP);
+		//Create Host/IP TextField
 		JTextField host = new JTextField();
 		host.setPreferredSize(new Dimension((jfwidth/8)*1, jfheight/15));
 		host.setHorizontalAlignment(SwingConstants.LEFT);
@@ -80,11 +83,13 @@ public class Frame extends JFrame{
 		startbtn.setBackground(Color.green);
 		startbtn.addActionListener(e -> Logic.Start(host.getText(),port.getText()));
 
-		//Add Stop Button
-		JButton stopbtn = new JButton("Stop");
-		stopbtn.setFocusable(false);
-		stopbtn.setBackground(Color.red);
-		stopbtn.addActionListener(e -> Logic.Stop());
+		//Add Save Button
+		JButton savebtn = new JButton("Save");
+		savebtn.setFocusable(false);
+		savebtn.setBackground(Color.BLUE);
+		savebtn.setForeground(Color.WHITE);
+		savebtn.addActionListener(e -> Logic.Save());
+		
 
 		//Add Reset Button
 		JButton resetbtn = new JButton("Reset");
@@ -98,9 +103,9 @@ public class Frame extends JFrame{
 		cntrlpanel.add(hostspace);
 		cntrlpanel.add(port);
 		cntrlpanel.add(startbtn);
-		cntrlpanel.add(stopbtn);
+		cntrlpanel.add(savebtn);
 		cntrlpanel.add(resetbtn);
-		cntrlpanel.add(progress);
+		//cntrlpanel.add(progress);
 
 		//detailpanel.setBackground(Color.green);
 		detailpanel.setPreferredSize(new Dimension((jfwidth/4)*2, jfheight));
@@ -150,24 +155,25 @@ public class Frame extends JFrame{
 		updateDesc("If the port field is left empty it will default to 443.");
 		link.setText("Path:");
 		link.setEnabled(false);
-		updateProg(0);
-		y=0;
+		//updateProg(0);
+		vulny=0;
 		Main.refresh();
+		Logic.reset();
 	}
 
 	//Add a detection to list and detail panel
 	public static void addVuln(VulnData data) {
 		//Add detection to list as button
 		JButton vuln = new JButton();
-		vuln.setBounds(0,y,(jfwidth/4)*1,jfheight/15);
+		vuln.setBounds(0,vulny,(jfwidth/4)*1,jfheight/15);
+		//Set text
 		vuln.setText(data.name);
 		vuln.setBorder(BorderFactory.createLineBorder(Color.black));
 		vuln.setBackground(Color.white);
 		vuln.setFocusable(false);
 		vuln.addActionListener(e -> view(data));
 		listpanel.add(vuln);
-		y +=jfheight/15;
-	
+		vulny +=jfheight/15;
 	}
 
 	//Open link with default browser
@@ -211,6 +217,7 @@ public class Frame extends JFrame{
 	}
 
 	//Update Progress Bar
+	/*
 	public static void updateProg(int value) {
 		if (value == 100) {
 			progress.setString("Done!");
@@ -219,4 +226,5 @@ public class Frame extends JFrame{
 			progress.setValue(value);
 		}
 	}
+	*/
 }
