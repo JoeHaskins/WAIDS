@@ -22,11 +22,14 @@ public class Logic {
 			try {
 				String u;
 				if (port.length()!=0 && Integer.parseInt(port) == 80) {
-					u = "http://";
+					u = "http://"+host;
 				} else {
-					u = "https://";
+					if (Integer.parseInt(port)!=443) {
+						u = "https://"+host+":"+port;
+					} else {
+						u = "https://"+host;
+					}
 				}
-				u = u+host;
 				Frame.updateTitle("Scanning: "+host);
 				Main.refresh();
 
@@ -214,11 +217,11 @@ public class Logic {
 		savelist.clear();
 	}
 
-	//Stop button
+	//Save detections to file
 	public static void Save() {
 		try {
 			JFileChooser jfc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
-			jfc.setDialogTitle("Save your file");
+			jfc.setDialogTitle("Name and Save your file");
 			jfc.setAcceptAllFileFilterUsed(false);
 			FileNameExtensionFilter filter = new FileNameExtensionFilter("txt",  "txt");
 			jfc.addChoosableFileFilter(filter);

@@ -1,7 +1,8 @@
 import javax.swing.SwingUtilities;
 /**
- * waids
- * Test URLs:
+ * WAIDS
+ * Author: Joseph Haskins
+ * Some URLs Project can be tested on:
  * www.danylkoweb.com
  * compudocshop.ie
  * ahreinc.com
