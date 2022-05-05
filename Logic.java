@@ -16,6 +16,7 @@ import java.nio.file.Paths;
 public class Logic {
 
 	static ArrayList<VulnData> savelist = new ArrayList<VulnData>();
+
 	public static void Start(String host, String port) {
 		if (host.length()!=0) {
 			ArrayList<VulnData> list = new ArrayList<VulnData>();
@@ -24,11 +25,9 @@ public class Logic {
 				if (port.length()!=0 && Integer.parseInt(port) == 80) {
 					u = "http://"+host;
 				} else {
-					if (Integer.parseInt(port)!=443) {
-						u = "https://"+host+":"+port;
-					} else {
-						u = "https://"+host;
-					}
+					
+					u = "https://"+host;
+					
 				}
 				Frame.updateTitle("Scanning: "+host);
 				Main.refresh();
@@ -193,14 +192,14 @@ public class Logic {
 		return true;
 	}
 
-	//Convert the input stream from a connection to a String
+	//Convert the input stream from connection to a String
 	public static String connectionToString(HttpURLConnection con) {
 		try {
 			InputStream body;
 			if (con.getResponseCode() < HttpURLConnection.HTTP_BAD_REQUEST) {
 				body = con.getInputStream();
 			} else {
-				 /* error from server */
+				 // error from server
 				body = con.getErrorStream();
 			}
 			String bodyString = new String(body.readAllBytes(), StandardCharsets.UTF_8);
@@ -220,7 +219,9 @@ public class Logic {
 	//Save detections to file
 	public static void Save() {
 		try {
+			//Get user supplied path
 			JFileChooser jfc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
+			//Set Title
 			jfc.setDialogTitle("Name and Save your file");
 			jfc.setAcceptAllFileFilterUsed(false);
 			FileNameExtensionFilter filter = new FileNameExtensionFilter("txt",  "txt");
@@ -229,12 +230,15 @@ public class Logic {
 			int returnValue = jfc.showOpenDialog(null);
 			if (returnValue == JFileChooser.APPROVE_OPTION) {
 				String path = jfc.getSelectedFile().getPath()+".txt";
+				//Add detection details to string
 				String text = "Detections\n\n";
 				for (VulnData vuln : savelist) {
 					text += "Name: "+vuln.name+"\nDetails: "+vuln.details+"\nURL: "+vuln.url+"\n\n";
 				}
+				//Write to file
 				Files.writeString(Paths.get(path), text);
 			}
+		//Error Handling
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(null, "Error Selecting Folder Please Try Again!", "Error Selecting File",JOptionPane.ERROR_MESSAGE);
 		}
